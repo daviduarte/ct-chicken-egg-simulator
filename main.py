@@ -1,7 +1,9 @@
 import numpy as np
 import math
 from PIL import Image
-
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
+from dicom_dataset import create_dicom_dataset, create_dicom_dataset2
 
 #########
 # GLOBALS
@@ -13,8 +15,7 @@ D = 320   # 3D space depth
 VOXEL_MM = 1
 
 def plot3dModel(model_3d):
-    import matplotlib.pyplot as plt
-    from mpl_toolkits.mplot3d import Axes3D
+
     # Get the indices of non-zero values
     indices = np.where(model_3d == 255)
 
@@ -60,8 +61,8 @@ def createElipse(a,b, c, model_3d):
     offset_x = round(W/2)
     offset_y = round(H/2)
     offset_z = round(D/2)
-    for x in np.linspace((-a), (a), 1000):
-        for y in np.linspace((-b), (b), 1000):
+    for x in np.linspace((-a), (a), 200):
+        for y in np.linspace((-b), (b), 200):
 
             z = elipseEquation3d(x, y, a, b, c) # return z in mm
             if z is None:   # if x is out of elipse domain, continue
@@ -111,6 +112,7 @@ def run():
     output_path = "output_image.png"
     pil_image.save(output_path)
 
+    create_dicom_dataset2(model_3d)
 
     #plot3dModel(model_3d)
   

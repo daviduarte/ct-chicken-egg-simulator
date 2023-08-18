@@ -1,1 +1,1 @@
-# Computed Tomography (CT) Chiken Egg Dataset
+# Computed Tomography (CT) Chicken Egg Dataset
