@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 from dicom_dataset import create_dicom_dataset
 from utils import config_reader
+import random
 
 #########
 # GLOBALS
@@ -67,66 +68,84 @@ def createElipse(a,b, c, model_3d, model_3d_mask, configs):
     offset_x = round(W/2)
     offset_y = round(H/2)
     offset_z = round(D/2)
-    for x in np.linspace((-a), (a), 200):
-        for y in np.linspace((-b), (b), 200):
+    thicknedd_egg_shell = int(configs["General"]["THICKNESS_EGG_SHELL_INTERVAL"])
+    # Define a random egg shell thickness for this samples
+    random_thickness = random.randint(0, thicknedd_egg_shell)
+    for i in range(random_thickness):
+        # We draw several elipses increasing their radius to simulate the egg shell thickness
+        a += 1
+        b += 1
+        for x in np.linspace((-a), a, 500):
+            for y in np.linspace((-b), b, 500):
 
-            z = elipseEquation3d(x, y, a, b, c) # return z in mm
-            if z is None:   # if x is out of elipse domain, continue
-                continue
+                z = elipseEquation3d(x, y, a, b, c) # return z in mm
+                if z is None:   # if x is out of elipse domain, continue
+                    continue
 
-            # transform mm to voxels qtd
-            x_v = round(x / VOXEL_MM)
-            y_v = round(y/VOXEL_MM)
-            z_v_top = round(z / VOXEL_MM)
-            z_v_bottom = round(-z / VOXEL_MM)
+                # transform mm to voxels qtd
+                x_v = round(x / VOXEL_MM)
+                y_v = round(y/VOXEL_MM)
+                z_v_top = round(z / VOXEL_MM)
+                z_v_bottom = round(-z / VOXEL_MM)
 
-            # translate to the model_3d basis
-            x_v = x_v + offset_x
-            y_v = y_v + offset_y
-            z_v_top = z_v_top + offset_z
-            z_v_bottom  = z_v_bottom  + offset_z
+                # translate to the model_3d basis
+                x_v = x_v + offset_x
+                y_v = y_v + offset_y
+                z_v_top = z_v_top + offset_z
+                z_v_bottom  = z_v_bottom  + offset_z
 
-            #print(z)
-            ## Interpolate mm -> voxel
-            # + offset_x
-            # + offset_z
-            # + offset_z
-            #print("x: "+str(x_v) + "y: "+ str(y_v)+" z: " + str(z_v_top) + " z_bottom: " + str(z_v_bottom))
-            # Set the 
-            model_3d[z_v_top, x_v, y_v] = 255
-            model_3d[z_v_bottom, x_v, y_v ] = 255
+                #print(z)
+                ## Interpolate mm -> voxel
+                # + offset_x
+                # + offset_z
+                # + offset_z
+                #print("x: "+str(x_v) + "y: "+ str(y_v)+" z: " + str(z_v_top) + " z_bottom: " + str(z_v_bottom))
+                # Set the 
+                model_3d[z_v_top, x_v, y_v] = 255
+                model_3d[z_v_bottom, x_v, y_v ] = 255
 
-            model_3d_mask[z_v_top, x_v, y_v] = 1
-            model_3d_mask[z_v_bottom, x_v, y_v ] = 1
+                model_3d_mask[z_v_top, x_v, y_v] = 1
+                model_3d_mask[z_v_bottom, x_v, y_v ] = 1
 
 
 
 def run():
 
+    NUM_SAMPLES = 100
+    print("Creating "+str(NUM_SAMPLES) + " samples.")
     # Read ini config 
     configs = config_reader.read_config("config.ini")
 
-    # Create the 3D model filled with zeros
-    model_3d = np.zeros((W, H, D), dtype=np.uint8)
-    model_3d_mask = np.zeros((W, H, D), dtype=np.uint8)
+    for i in range(NUM_SAMPLES):
+        print("Creating " +str(i+1) + "-th sample...")
+        # Create the 3D model filled with zeros
+        model_3d = np.zeros((W, H, D), dtype=np.uint8)
+        model_3d_mask = np.zeros((W, H, D), dtype=np.uint8)
 
-    a = 30   # Elipse x radius in mm
-    b = 30   # Elipse y radius in mm
-    c = 60
-    if a > W*VOXEL_MM or b > H*VOXEL_MM:
-        print("It is not generate a egg greater than the 3d image")
-        raise(ValueError)
-    
-    createElipse(a, b, c, model_3d, model_3d_mask, configs)
+        # Define a random egg size from confif file
+        a_min = int(configs["General"]["A_MIN"])
+        a_max = int(configs["General"]["A_MAX"])
+        b_min = int(configs["General"]["B_MIN"])
+        b_max = int(configs["General"]["B_MAX"])
+        c_min = int(configs["General"]["C_MIN"])
+        c_max = int(configs["General"]["C_MAX"])
+        a = random.randint(a_min, a_max)   # Elipse x radius in mm
+        b = random.randint(b_min, b_max)   # Elipse y radius in mm
+        c = random.randint(c_min, c_max)
+        if a > W*VOXEL_MM or b > H*VOXEL_MM:
+            print("It is not generate a egg greater than the 3d image")
+            raise(ValueError)
+        
+        createElipse(a, b, c, model_3d, model_3d_mask, configs)
 
-    plano = model_3d[:, :, 160]
+        plano = model_3d[:, :, 160]
 
-    print(plano.shape)
-    pil_image = Image.fromarray(plano)
-    output_path = "output_image.png"
-    pil_image.save(output_path)
+        print(plano.shape)
+        pil_image = Image.fromarray(plano)
+        output_path = "output_image.png"
+        pil_image.save(output_path)
 
-    create_dicom_dataset(model_3d, model_3d_mask, configs)
+        create_dicom_dataset(model_3d, model_3d_mask, configs)
 
     #plot3dModel(model_3d)
   
