@@ -12,6 +12,8 @@ import pydicom
 from pydicom.dataset import FileDataset, FileMetaDataset
 from pydicom.uid import UID
 
+import projection
+
 #########
 # GLOBALS
 #########
@@ -21,26 +23,11 @@ D = 320   # 3D space depth
 
 VOXEL_MM = 1
 
-# This function is usefull if we want VOXEL_MM different to 1mm
-def extract_slices(image_array, image_array_mask, configs):
-    #print(image_array[:, :].shape)
-    #exit()
-    slices = []
-    masks = []
-    # TODO: GET SLICES ONLY IN THE VOXEL_MM INTERVAL
-    #TODO: THIS FUNCTION WORKS ONLY WITH VOXEL_MM = 1mm
-    for i in range(image_array.shape[-1]):
-        slice = image_array[:, :, i]
-        mask = image_array_mask[:, :, i]
-        slices.append(slice)
-        masks.append(mask)
-    
-    return slices, masks
 
 
 def save_slices(image_array, image_array_mask, configs, random_name, uid_prefix="1.2.826.0.1.3680043.9.7133.1.1."):
 
-    slices, masks = extract_slices(image_array, image_array_mask, configs)
+    slices, masks = projection.extract_slices(image_array, image_array_mask, configs)
 
 
     # Create a folder in ./models

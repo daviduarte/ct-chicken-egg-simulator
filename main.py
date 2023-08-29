@@ -11,6 +11,8 @@ from mpl_toolkits.mplot3d import Axes3D
 from dicom_dataset import create_dicom_dataset
 from utils import config_reader
 import random
+import sys
+import projection
 
 #########
 # GLOBALS
@@ -62,7 +64,7 @@ def elipseEquation3d(x, y, a, b, c):
         return None
     return math.sqrt(aux)
 
-def createElipse(a,b, c, model_3d, model_3d_mask, configs):
+def createElipse(a,b, c, model_3d, model_3d_mask, image_array_attenuation, configs):
     
     # The orthonormal base in np array starts at corner of np array, while we are drawing the elipse considering a base in the middle of plane. We need to adjust using offsets (translation)
     offset_x = round(W/2)
@@ -106,7 +108,7 @@ def createElipse(a,b, c, model_3d, model_3d_mask, configs):
 
                 model_3d_mask[z_v_top, x_v, y_v] = 1
                 model_3d_mask[z_v_bottom, x_v, y_v ] = 1
-
+                image_array_attenuation[z_v_bottom, x_v, y_v] = 0.1
 
 
 def run():
@@ -121,6 +123,7 @@ def run():
         # Create the 3D model filled with zeros
         model_3d = np.zeros((W, H, D), dtype=np.uint8)
         model_3d_mask = np.zeros((W, H, D), dtype=np.uint8)
+        image_array_attenuation = np.zeros((W, H, D), dtype=np.float16)
 
         # Define a random egg size from confif file
         a_min = int(configs["General"]["A_MIN"])
@@ -136,7 +139,7 @@ def run():
             print("It is not generate a egg greater than the 3d image")
             raise(ValueError)
         
-        createElipse(a, b, c, model_3d, model_3d_mask, configs)
+        createElipse(a, b, c, model_3d, model_3d_mask, image_array_attenuation, configs)
 
         plano = model_3d[:, :, 160]
 
@@ -145,6 +148,7 @@ def run():
         output_path = "output_image.png"
         pil_image.save(output_path)
 
+        projection.project_blue_box(model_3d, image_array_attenuation, configs, VOXEL_MM)
         create_dicom_dataset(model_3d, model_3d_mask, configs)
 
     #plot3dModel(model_3d)

@@ -19,6 +19,10 @@ def read_config(file_path):
     B_MAX = config.get('General', 'B_MAX')
     C_MIN = config.get('General', 'C_MIN')
     C_MAX = config.get('General', 'C_MAX')
+
+    BLUE_BOX_FLAG = config.get('Blue_Box', 'BLUE_BOX_EXAM')
+    EMISSION_POINT = config.get('Blue_Box', 'EMISSION_POINT')
+    RECEPTOR_PLANE = config.get('Blue_Box', 'RECEPTOR_PLANE')
     
     return {
         'General': {
@@ -31,5 +35,11 @@ def read_config(file_path):
             'B_MAX': B_MAX,
             'C_MIN': C_MIN,
             'C_MAX': C_MAX
+        },
+        'Blue_Box': {
+            'BLUE_BOX_FLAG': BLUE_BOX_FLAG,
+            'EMISSION_POINT' : EMISSION_POINT,
+            'RECEPTOR_PLANE': RECEPTOR_PLANE
         }
+
     }
