@@ -23,6 +23,8 @@ def read_config(file_path):
     BLUE_BOX_FLAG = config.get('Blue_Box', 'BLUE_BOX_EXAM')
     EMISSION_POINT = config.get('Blue_Box', 'EMISSION_POINT')
     RECEPTOR_PLANE = config.get('Blue_Box', 'RECEPTOR_PLANE')
+
+    POINT_FOCUS = config.get('Blue_Box', 'POINT_FOCUS')
     
     return {
         'General': {
@@ -39,7 +41,8 @@ def read_config(file_path):
         'Blue_Box': {
             'BLUE_BOX_FLAG': BLUE_BOX_FLAG,
             'EMISSION_POINT' : EMISSION_POINT,
-            'RECEPTOR_PLANE': RECEPTOR_PLANE
+            'RECEPTOR_PLANE': RECEPTOR_PLANE,
+            'POINT_FOCUS': POINT_FOCUS
         }
 
     }

@@ -1,46 +1,27 @@
 """
     PRISMA LAB
-    Sao Paulo State University
+    Sao Paulo State University (UNESP) - Brazil
 """
 
 import numpy as np
 import math
 from PIL import Image
-import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 from dicom_dataset import create_dicom_dataset
 from utils import config_reader
 import random
 import sys
 import projection
+from utils.plot import plot3dModel
 
 #########
 # GLOBALS
 #########
-W = 320  # 3D space width
-H = 320  # 3D space height
-D = 320   # 3D space depth
+W = 150  # 3D space width
+H = 150  # 3D space height
+D = 150   # 3D space depth
 
 VOXEL_MM = 1
-
-def plot3dModel(model_3d):
-
-    # Get the indices of non-zero values
-    indices = np.where(model_3d == 255)
-
-    # Create a figure and a 3D axis
-    fig = plt.figure()
-    ax = fig.add_subplot(111, projection='3d')
-
-    # Plot the 3D surface using the indices
-    ax.scatter(indices[0], indices[1], indices[2], c='r', marker='o')
-
-    # Set labels for the axes
-    ax.set_xlabel('X')
-    ax.set_ylabel('Y')
-    ax.set_zlabel('Z')
-
-    plt.show()      
 
 # y = f(x)
 # x = mm unit
@@ -69,10 +50,12 @@ def createElipse(a,b, c, model_3d, model_3d_mask, image_array_attenuation, confi
     # The orthonormal base in np array starts at corner of np array, while we are drawing the elipse considering a base in the middle of plane. We need to adjust using offsets (translation)
     offset_x = round(W/2)
     offset_y = round(H/2)
-    offset_z = round(D/2)
+    offset_z = round(D)
     thicknedd_egg_shell = int(configs["General"]["THICKNESS_EGG_SHELL_INTERVAL"])
     # Define a random egg shell thickness for this samples
     random_thickness = random.randint(0, thicknedd_egg_shell)
+    #APAGAR DEPOIS!!
+    random_thickness = 15
     for i in range(random_thickness):
         # We draw several elipses increasing their radius to simulate the egg shell thickness
         a += 1
@@ -87,14 +70,14 @@ def createElipse(a,b, c, model_3d, model_3d_mask, image_array_attenuation, confi
                 # transform mm to voxels qtd
                 x_v = round(x / VOXEL_MM)
                 y_v = round(y/VOXEL_MM)
-                z_v_top = round(z / VOXEL_MM)
-                z_v_bottom = round(-z / VOXEL_MM)
+                z_v_top = round(z / VOXEL_MM) + round(c)
+                z_v_bottom = round(-z / VOXEL_MM) + round(c)
 
                 # translate to the model_3d basis
-                x_v = x_v + offset_x
-                y_v = y_v + offset_y
-                z_v_top = z_v_top + offset_z
-                z_v_bottom  = z_v_bottom  + offset_z
+                x_v = x_v + offset_x -1
+                y_v = y_v + offset_y -1
+                z_v_top = offset_z - z_v_top -1
+                z_v_bottom  = offset_z - z_v_bottom -1# + offset_z 
 
                 #print(z)
                 ## Interpolate mm -> voxel
@@ -103,12 +86,15 @@ def createElipse(a,b, c, model_3d, model_3d_mask, image_array_attenuation, confi
                 # + offset_z
                 #print("x: "+str(x_v) + "y: "+ str(y_v)+" z: " + str(z_v_top) + " z_bottom: " + str(z_v_bottom))
                 # Set the 
+
                 model_3d[z_v_top, x_v, y_v] = 255
                 model_3d[z_v_bottom, x_v, y_v ] = 255
 
                 model_3d_mask[z_v_top, x_v, y_v] = 1
                 model_3d_mask[z_v_bottom, x_v, y_v ] = 1
-                image_array_attenuation[z_v_bottom, x_v, y_v] = 0.1
+
+                image_array_attenuation[z_v_top, x_v, y_v] = 0.01
+                image_array_attenuation[z_v_bottom, x_v, y_v] = 0.01
 
 
 def run():
@@ -139,16 +125,20 @@ def run():
             print("It is not generate a egg greater than the 3d image")
             raise(ValueError)
         
+        # TODO: Verify if the egg dimension summed with the greatest thichness could extrapolate the 3d volum. If yes, raise an exception
+
         createElipse(a, b, c, model_3d, model_3d_mask, image_array_attenuation, configs)
 
-        plano = model_3d[:, :, 160]
+        #plot3dModel(model_3d)
 
-        print(plano.shape)
-        pil_image = Image.fromarray(plano)
-        output_path = "output_image.png"
-        pil_image.save(output_path)
+        #plano = model_3d[:, :, 160]
 
-        projection.project_blue_box(model_3d, image_array_attenuation, configs, VOXEL_MM)
+        #print(plano.shape)
+        #pil_image = Image.fromarray(plano)
+        #output_path = "output_image.png"
+        #pil_image.save(output_path)
+
+        projection.project_blue_box(model_3d, image_array_attenuation, configs, VOXEL_MM, W, H, D)
         create_dicom_dataset(model_3d, model_3d_mask, configs)
 
     #plot3dModel(model_3d)
