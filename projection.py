@@ -43,16 +43,6 @@ def ray(pixel_x, pixel_y, pixel_z, focus_x, focus_y, focus_z, image_array_attenu
         y = y0 + t*(focus_y-y0)
         z = z0 + t*(focus_z-z0)
 
-        #print("x0: "+str(x0)+" y0: "+str(y0) + "z0: " + str(z0))
-        #print("x: "+str(x)+ " y: "+str(y)+" z: "+str(z) )
-        """
-        try:
-            model_3d[round(x/VOXEL_MM), round(y/VOXEL_MM), round(z/VOXEL_MM)] = 254
-            
-        except IndexError:
-            break
-        """
-
         if y >= PLANE_Y_POSITION:  # Receptor plane lives on x = 75
             break
 
