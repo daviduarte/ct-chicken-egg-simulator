@@ -4,7 +4,7 @@ import multiprocessing
 import time
 from utils.plot import plot3dModel
 import matplotlib.pyplot as plt
-
+import copy
 
 
 # This function is usefull if we want VOXEL_MM different to 1mm
@@ -28,7 +28,7 @@ def receptor_plane_equation(x, y, a,b,c,d):
         c = 0.00001
     return  (d - (-a*x) - (b*y))/c
 
-def ray(pixel_x, pixel_y, pixel_z, focus_x, focus_y, focus_z, image_array_attenuation, VOXEL_MM, final_pixel, model_3d):
+def ray(pixel_x, pixel_y, pixel_z, focus_x, focus_y, focus_z, image_array_attenuation, VOXEL_MM, final_pixel, model_3d, EMISSION_POINT):
     final_pixel = 100
     
     x0 = pixel_x
@@ -37,6 +37,9 @@ def ray(pixel_x, pixel_y, pixel_z, focus_x, focus_y, focus_z, image_array_attenu
 
     PLANE_Y_POSITION = 200
 
+    ###
+    # Ray from voxel to projection plane
+    ###
     for index, t in enumerate(np.linspace(0,50,4000)):
         # Parametric line equation
         x = x0 + t*(focus_x-x0)
@@ -54,6 +57,27 @@ def ray(pixel_x, pixel_y, pixel_z, focus_x, focus_y, focus_z, image_array_attenu
 
         final_pixel -= (final_pixel * image_array_attenuation[round(x/VOXEL_MM), round(y/VOXEL_MM), round(z/VOXEL_MM)])
 
+        ###
+        # Ray from voxel to light emissor
+        ###
+        for index, t2 in enumerate(np.linspace(0,50,4000)):
+            # Parametric line equation
+            x = x0 + t2*(EMISSION_POINT[0]-x0)
+            y = y0 + t2*(EMISSION_POINT[1]-y0)
+            z = z0 + t2*(EMISSION_POINT[2]-z0)
+
+            if z >= 150:  # Receptor plane lives on x = 75
+                break
+
+            try:
+                if image_array_attenuation[round(x/VOXEL_MM), round(y/VOXEL_MM), round(z/VOXEL_MM)] == 0:
+                    continue
+            except IndexError as e: # If t makes the actual point extrapolate the 3d volume, we return the final pixel
+                break
+
+            final_pixel -= (final_pixel * image_array_attenuation[round(x/VOXEL_MM), round(y/VOXEL_MM), round(z/VOXEL_MM)])
+
+
     # Calculate the intersection between the ray with the projection plane. 
     t = (PLANE_Y_POSITION - y0)/(focus_y-y0)
     x = x0 + t*(focus_x-x0)
@@ -62,15 +86,15 @@ def ray(pixel_x, pixel_y, pixel_z, focus_x, focus_y, focus_z, image_array_attenu
     return final_pixel, (x,z)
 
 def work(param_list):
-    pixel_x, focus_x, focus_y, focus_z, image_array_attenuation, VOXEL_MM, final_pixel, image_array, receptor_plane = param_list
+    pixel_x, focus_x, focus_y, focus_z, image_array_attenuation, VOXEL_MM, final_pixel, image_array, receptor_plane, EMISSION_POINT = param_list
     list_pixels = []
     for pixel_y in range(40, 110): #range(start_y, end_y):
         for pixel_z in range(40, 110): #range(start_z, end_z):
             #receptor_z = receptor_plane_equation(receptor_x, receptor_y, a,b,c,d)
 
             #pixel_x, pixel_y, pixel_z = 45, 75, 75
-            focus_x, focus_y, focus_z = 100, 155, 75
-            final_pixel, coords = ray(pixel_x, pixel_y, pixel_z, focus_x, focus_y, focus_z, image_array_attenuation, VOXEL_MM, final_pixel, image_array)
+            
+            final_pixel, coords = ray(pixel_x, pixel_y, pixel_z, focus_x, focus_y, focus_z, image_array_attenuation, VOXEL_MM, final_pixel, image_array, EMISSION_POINT)
             
             # Calculate the intersection between the light beam and the projection plane
             # Parametric line equation
@@ -98,6 +122,8 @@ def project_blue_box(image_array, image_array_attenuation, configs, VOXEL_MM, W,
 
     # Create a array that will store the light intensity reached in each pixel of receptor plane
     receptor_plane = np.zeros((150, 150), dtype=np.float16)
+
+    EMISSION_POINT = (149, 75, 75)
 
     POINT_FOCUS = [int(i) for i in configs['Blue_Box']['POINT_FOCUS'].split(",")]
 
@@ -136,8 +162,8 @@ def project_blue_box(image_array, image_array_attenuation, configs, VOXEL_MM, W,
     print("Construinfo a param list: ")
     for pixel_x in range(20, 150):#range(start_x, end_x):
         start = time.time()
-        focus_x, focus_y, focus_z = 120, 200, 75
-        param_list.append([pixel_x, focus_x, focus_y, focus_z, image_array_attenuation, VOXEL_MM, final_pixel, image_array, receptor_plane])
+        focus_x, focus_y, focus_z = 80, 155, 75
+        param_list.append([pixel_x, focus_x, focus_y, focus_z, image_array_attenuation, VOXEL_MM, final_pixel, image_array, receptor_plane, EMISSION_POINT])
         #work(pixel_x, focus_x, focus_y, focus_z, image_array_attenuation, VOXEL_MM, final_pixel, image_array, receptor_plane)
 
     print("Executando o processo")
@@ -150,6 +176,12 @@ def project_blue_box(image_array, image_array_attenuation, configs, VOXEL_MM, W,
                 continue
 
             receptor_plane[i[0][0],i[0][1]] += 100-i[1]
+    
+    # Imagem resultante no plano de projeção é invertida. Vamos ajustar a sua orientação
+    new = copy.deepcopy(receptor_plane)
+    for i in range(receptor_plane.shape[0]):
+        new[i, :] = receptor_plane[-i, :]
+    receptor_plane = new
 
     end =time.time()
     print("Tempo decorrido para projetar uma linha do model: " + str(end-start))
