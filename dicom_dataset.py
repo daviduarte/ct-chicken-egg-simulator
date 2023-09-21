@@ -163,11 +163,7 @@ def save_segmentation_mask(image_array_mask, random_name):
     path = os.path.join("models/masks", random_name+".npy")
     np.save(image_array_mask, path)
 
-def create_dicom_dataset(image_array, model_3d_mask, configs, uid_prefix="1.2.826.0.1.3680043.9.7133.1.1."):
-
-    name_lenght = 10
-    characters = string.ascii_lowercase + string.digits
-    random_name = ''.join(random.choice(characters) for _ in range(name_lenght))
+def create_dicom_dataset(random_name, image_array, model_3d_mask, configs, uid_prefix="1.2.826.0.1.3680043.9.7133.1.1."):
 
     save_slices(image_array, model_3d_mask, configs, random_name, uid_prefix="1.2.826.0.1.3680043.9.7133.1.1.")
     save_3d_model(image_array, random_name)

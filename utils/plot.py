@@ -21,4 +21,4 @@ def plot3dModel(model_3d):
     ax.set_ylabel('Y')
     ax.set_zlabel('Z')
 
-    plt.show()      
+    plt.show()

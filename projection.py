@@ -109,19 +109,11 @@ def work(param_list):
             list_pixels.append([[int(coords[0]), int(coords[1])], final_pixel])
     return list_pixels
 
-"""
-def init_worker(receptor_plane_coords):
-    # declare scope of a new global variable
-    global shared_data
-    # store argument in the global variable for this process
-    
-    shared_data = receptor_plane_coords    
-"""
-
-def project_blue_box(image_array, image_array_attenuation, configs, VOXEL_MM, W, H, D):
+def project_blue_box(random_name, image_array, image_array_attenuation, configs, VOXEL_MM, W, H, D):
 
     # Create a array that will store the light intensity reached in each pixel of receptor plane
     receptor_plane = np.zeros((150, 150), dtype=np.float16)
+    receptor_mask = np.zeros((150, 150), dtype=np.float16)
 
     EMISSION_POINT = (149, 75, 75)
 
@@ -149,19 +141,11 @@ def project_blue_box(image_array, image_array_attenuation, configs, VOXEL_MM, W,
     focus_y = POINT_FOCUS[1] + offset_y
     focus_z = offset_z-POINT_FOCUS[2] 
 
-    #plot3dModel(image_array[(offset_z-70):(0+offset_z), (-15+offset_x):(15+offset_x), (-15+offset_y):(15+offset_y)])
-    #plot3dModel(image_array[start_z:end_z, start_x:end_x, start_y:end_y])
-    #exit()
-
-    #for receptor_x in np.linspace(0, 1):
-    #    for receptor_y in np.linspace(-15, 15):
     final_pixel = 1
 
-    start = time.time()
     param_list = []
     print("Construinfo a param list: ")
     for pixel_x in range(20, 150):#range(start_x, end_x):
-        start = time.time()
         focus_x, focus_y, focus_z = 80, 155, 75
         param_list.append([pixel_x, focus_x, focus_y, focus_z, image_array_attenuation, VOXEL_MM, final_pixel, image_array, receptor_plane, EMISSION_POINT])
         #work(pixel_x, focus_x, focus_y, focus_z, image_array_attenuation, VOXEL_MM, final_pixel, image_array, receptor_plane)
@@ -176,51 +160,21 @@ def project_blue_box(image_array, image_array_attenuation, configs, VOXEL_MM, W,
                 continue
 
             receptor_plane[i[0][0],i[0][1]] += 100-i[1]
+            receptor_mask[i[0][0],i[0][1]] = 1      # 1 is egg
     
     # Imagem resultante no plano de projeção é invertida. Vamos ajustar a sua orientação
     new = copy.deepcopy(receptor_plane)
+    new_mask = copy.deepcopy(receptor_plane)
     for i in range(receptor_plane.shape[0]):
         new[i, :] = receptor_plane[-i, :]
+        new_mask[i, :] = receptor_mask[-i, :]
     receptor_plane = new
+    receptor_mask = new_mask
 
-    end =time.time()
-    print("Tempo decorrido para projetar uma linha do model: " + str(end-start))
-    print(np.max(receptor_plane))
-    print(np.min(receptor_plane))
     # Plot the 2D array as an image
     receptor_plane = ((receptor_plane - np.min(receptor_plane))/(np.max(receptor_plane)- np.min(receptor_plane))*255).astype(np.uint8)
-    print(receptor_plane.shape)
+
     plt.imshow(receptor_plane, cmap='gray', vmin=0, vmax=255)  # You can choose a different colormap
-    plt.colorbar()  # Add a colorbar for reference
-    plt.show()        
-    exit()
-
-
-    end = time.time()
-    print("3d model pixel: "+str(pixel_x)+ " " + str(pixel_y)+" " + str(pixel_z))
-    print("Valor do pixel. Demorou:"+str(end-start))
-    print(final_pixel)
-
-
-
-    """
-                            num_processes = multiprocessing.cpu_count()  # Use all available CPU cores
-                        pool = multiprocessing.Pool(processes=num_processes)
-                        results = pool.map(process_data, data_list)
-
-                        
-                        for t in np.linspace(0,30,1):
-                            x0 = pixel_x
-                            y0 = pixel_y
-                            z0 = pixel_z
-
-                            x = x0 + t*receptor_x
-                            y = y0 + t*receptor_y
-                            z = z0 + t*receptor_z
-
-                            final_pixel -= final_pixel * image_array_attenuation[round(z/VOXEL_MM), round(x/VOXEL_MM), round(y/VOXEL_MM)]
-    """
-
-
-
-
+    plt.savefig(os.path.join('models', 'bluebox_projections', random_name+'.png'), format='png')
+    np.save(os.path.join('models', 'bluebox_masks', random_name), receptor_mask)
+    plt.close()

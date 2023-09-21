@@ -13,6 +13,7 @@ import random
 import sys
 import projection
 from utils.plot import plot3dModel
+import string
 
 #########
 # GLOBALS
@@ -125,7 +126,6 @@ def run():
             raise(ValueError)
         
         # TODO: Verify if the egg dimension summed with the greatest thichness could extrapolate the 3d volum. If yes, raise an exception
-
         createElipse(a, b, c, model_3d, model_3d_mask, image_array_attenuation, configs)
 
         #plot3dModel(model_3d)
@@ -137,8 +137,15 @@ def run():
         #output_path = "output_image.png"
         #pil_image.save(output_path)
 
-        projection.project_blue_box(model_3d, image_array_attenuation, configs, VOXEL_MM, W, H, D)
-        create_dicom_dataset(model_3d, model_3d_mask, configs)
+
+        # Generates a random name to the model
+        
+        name_lenght = 10
+        characters = string.ascii_lowercase + string.digits
+        random_name = ''.join(random.choice(characters) for _ in range(name_lenght))
+
+        projection.project_blue_box(random_name, model_3d, image_array_attenuation, configs, VOXEL_MM, W, H, D)
+        create_dicom_dataset(random_name, model_3d, model_3d_mask, configs)
 
     #plot3dModel(model_3d)
   
