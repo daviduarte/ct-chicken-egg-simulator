@@ -54,7 +54,7 @@ def createElipse(a,b, c, model_3d, model_3d_mask, image_array_attenuation, confi
     offset_z = round(D)
     thicknedd_egg_shell = int(configs["General"]["THICKNESS_EGG_SHELL_INTERVAL"])
     # Define a random egg shell thickness for this samples
-    random_thickness = random.randint(0, thicknedd_egg_shell)
+    random_thickness = random.randint(1, thicknedd_egg_shell)
 
     for i in range(random_thickness):
         # We draw several elipses increasing their radius to simulate the egg shell thickness
